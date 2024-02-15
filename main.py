@@ -1,13 +1,38 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from sqlalchemy import Engine
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 import torch
 import requests
+
+from fastapi import FastAPI, HTTPException, Depends
+from sqlalchemy.orm import Session  # Assuming you have these modules
+# from .database import SessionLocal, engine
+
 from bs4 import BeautifulSoup
+from fastapi.middleware.cors import CORSMiddleware
+from database import SessionLocal
+from register import router as register_router
 
 # Initialize the FastAPI app
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify your app's domain instead of "*"
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+def get_db():
+     db = SessionLocal(bind=Engine)
+     try:
+         yield db
+     finally:
+         db.close()
+
+app.include_router(register_router, prefix="/register", tags=["register"])
 # Load the tokenizer and model
 tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
 model = AutoModelForQuestionAnswering.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
